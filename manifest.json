@@ -4,8 +4,8 @@
   "version": "1.0.0",
   "minAppVersion": "0.15.0",
   "description": "Automatically generate titles for your notes using AI",
-  "author": "Your Name",
-  "authorUrl": "",
+  "author": "zaharenok",
+  "authorUrl": "https://github.com/zaharenok",
   "fundingUrl": "",
   "isDesktopOnly": false
 }
