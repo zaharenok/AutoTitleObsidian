@@ -14,12 +14,12 @@ export class AutoTitleSettingTab extends PluginSettingTab {
 
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'AutoTitle - Настройки' });
+    containerEl.createEl('h2', { text: 'AutoTitle – Settings' });
 
-    // API ключ OpenAI
+    // OpenAI API Key
     new Setting(containerEl)
-      .setName('API ключ OpenAI')
-      .setDesc('Введите ваш API ключ OpenAI для генерации заголовков')
+      .setName('OpenAI API Key')
+      .setDesc('Enter your OpenAI API key for title generation')
       .addText(text => text
         .setPlaceholder('sk-...')
         .setValue(this.plugin.settings.apiKey)
@@ -28,24 +28,25 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Модель
+    // Model
     new Setting(containerEl)
-      .setName('Модель OpenAI')
-      .setDesc('Выберите модель для генерации заголовков')
+      .setName('OpenAI Model')
+      .setDesc('Select the model for title generation')
       .addDropdown(dropdown => dropdown
+        .addOption('gpt-4.1', 'GPT-4.1')
+        .addOption('gpt-4.1-nano', 'GPT-4.1 Nano')
+        .addOption('gpt-4o', 'GPT-4o')
         .addOption('gpt-3.5-turbo', 'GPT-3.5 Turbo')
-        .addOption('gpt-4', 'GPT-4')
-        .addOption('gpt-4-turbo-preview', 'GPT-4 Turbo')
         .setValue(this.plugin.settings.model)
         .onChange(async (value) => {
           this.plugin.settings.model = value;
           await this.plugin.saveSettings();
         }));
 
-    // Температура
+    // Temperature
     new Setting(containerEl)
-      .setName('Творческость (Temperature)')
-      .setDesc('Настройка творческости генерации (0.0 - более консервативно, 1.0 - более креативно)')
+      .setName('Creativity (Temperature)')
+      .setDesc('Adjust the creativity of generation (0.0 – more conservative, 1.0 – more creative)')
       .addSlider(slider => slider
         .setLimits(0, 1, 0.1)
         .setValue(this.plugin.settings.temperature)
@@ -55,10 +56,10 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Автоматический триггер
+    // Auto generation
     new Setting(containerEl)
-      .setName('Автоматическая генерация')
-      .setDesc('Автоматически предлагать заголовки при наборе текста')
+      .setName('Automatic Generation')
+      .setDesc('Automatically suggest titles while typing')
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.autoTrigger)
         .onChange(async (value) => {
@@ -66,27 +67,26 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Язык по умолчанию
+    // Title Language
     new Setting(containerEl)
-      .setName('Язык по умолчанию')
-      .setDesc('Выберите язык для генерации заголовков')
+      .setName('Title Language')
+      .setDesc('Select the language for the generated title')
       .addDropdown(dropdown => dropdown
-        .addOption('auto', 'Автоопределение')
-        .addOption('русский', 'Русский')
-        .addOption('английский', 'Английский')
-        .addOption('французский', 'Французский')
-        .addOption('немецкий', 'Немецкий')
-        .addOption('испанский', 'Испанский')
-        .setValue(this.plugin.settings.language)
+        .addOption('auto', 'Auto (detect from note language)')
+        .addOption('en', 'English')
+        .addOption('ru', 'Russian')
+        .addOption('zh', 'Chinese')
+        .addOption('es', 'Spanish')
+        .setValue(this.plugin.settings.language || 'auto')
         .onChange(async (value) => {
           this.plugin.settings.language = value;
           await this.plugin.saveSettings();
         }));
 
-    // Режим замены
+    // Replace mode
     new Setting(containerEl)
-      .setName('Режим замены')
-      .setDesc('Автоматически заменять текущий заголовок без подтверждения')
+      .setName('Replace Mode')
+      .setDesc('Automatically replace the current title without confirmation')
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.replaceMode)
         .onChange(async (value) => {
@@ -94,10 +94,10 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Таймаут
+    // Timeout
     new Setting(containerEl)
-      .setName('Таймаут автогенерации (мс)')
-      .setDesc('Время ожидания после прекращения набора текста перед генерацией заголовка')
+      .setName('Auto-generation Timeout (ms)')
+      .setDesc('Waiting time after you stop typing before generating a title')
       .addText(text => text
         .setPlaceholder('3000')
         .setValue(this.plugin.settings.timeout.toString())
@@ -109,20 +109,20 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           }
         }));
 
-    // Информация
-    containerEl.createEl('h3', { text: 'Использование' });
+    // Info
+    containerEl.createEl('h3', { text: 'Usage' });
     const infoDiv = containerEl.createDiv();
     infoDiv.innerHTML = `
-      <p><strong>Горячие клавиши:</strong></p>
+      <p><strong>Hotkeys:</strong></p>
       <ul>
-        <li><code>Ctrl+Shift+H</code> - Генерация заголовка для текущей заметки</li>
+        <li><code>Ctrl+Shift+H</code> – Generate a title for the current note</li>
       </ul>
-      <p><strong>Как использовать:</strong></p>
+      <p><strong>How to use:</strong></p>
       <ul>
-        <li>Введите API ключ OpenAI в настройках</li>
-        <li>Напишите текст в заметке</li>
-        <li>Используйте горячую клавишу или подождите автоматической генерации</li>
-        <li>Подтвердите или отклоните предложенный заголовок</li>
+        <li>Enter your OpenAI API key in the settings</li>
+        <li>Write text in your note</li>
+        <li>Use the hotkey or wait for automatic generation</li>
+        <li>Confirm or reject the suggested title</li>
       </ul>
     `;
   }

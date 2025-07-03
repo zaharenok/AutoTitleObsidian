@@ -7,6 +7,7 @@ export default class AutoTitlePlugin extends Plugin {
   settings: AutoTitleSettings;
   private typingTimer: NodeJS.Timeout | null = null;
   private isGenerating = false;
+  private generatedForCurrentFile: Set<string> = new Set();
 
   constructor(app: App, manifest: PluginManifest) {
     super(app, manifest);
@@ -25,7 +26,7 @@ export default class AutoTitlePlugin extends Plugin {
     // Добавляем команду
     this.addCommand({
       id: 'generate-title',
-      name: 'Генерировать заголовок для заметки',
+      name: 'Generate title for note',
       callback: () => {
         this.generateTitleForActiveNote();
       },
@@ -40,7 +41,7 @@ export default class AutoTitlePlugin extends Plugin {
     // Добавляем команду для редактора
     this.addCommand({
       id: 'generate-title-editor',
-      name: 'Генерировать заголовок (в редакторе)',
+      name: 'Generate title (in editor)',
       editorCallback: (editor: Editor, view: MarkdownView) => {
         this.generateTitleForEditor(editor, view);
       }
@@ -98,12 +99,15 @@ export default class AutoTitlePlugin extends Plugin {
         if (!this.settings.autoTrigger || this.isGenerating) {
           return;
         }
-
+        // Не запускать автогенерацию, если уже был сгенерирован заголовок для этой заметки
+        const file = view?.file;
+        if (file && this.generatedForCurrentFile.has(file.path)) {
+          return;
+        }
         // Сбрасываем предыдущий таймер
         if (this.typingTimer) {
           clearTimeout(this.typingTimer);
         }
-
         // Устанавливаем новый таймер
         this.typingTimer = setTimeout(() => {
           this.autoGenerateTitle(editor, view);
@@ -116,21 +120,22 @@ export default class AutoTitlePlugin extends Plugin {
     if (this.isGenerating) {
       return;
     }
-
     const content = editor.getValue();
     if (!content || content.trim().length < 50) {
       return;
     }
-
     // Проверяем, есть ли уже заголовок
     const lines = content.split('\n');
     const firstLine = lines[0]?.trim();
-    
     // Если первая строка уже является заголовком и режим замены выключен, не генерируем
     if (firstLine && firstLine.startsWith('#') && !this.settings.replaceMode) {
       return;
     }
-
+    // Не запускать автогенерацию, если уже был сгенерирован заголовок для этой заметки
+    const file = view?.file;
+    if (file && this.generatedForCurrentFile.has(file.path)) {
+      return;
+    }
     try {
       this.isGenerating = true;
       const suggestedTitle = await generateTitle(
@@ -140,10 +145,11 @@ export default class AutoTitlePlugin extends Plugin {
         this.settings.temperature,
         this.settings.language
       );
-
       if (this.settings.replaceMode) {
         this.replaceTitle(editor, suggestedTitle);
         showNotice(`Заголовок обновлен: "${suggestedTitle}"`);
+        // После генерации — больше не автогенерировать для этой заметки
+        if (file) this.generatedForCurrentFile.add(file.path);
       } else {
         this.showTitleSuggestionModal(editor, view, suggestedTitle);
       }
@@ -250,7 +256,9 @@ export default class AutoTitlePlugin extends Plugin {
       if (accepted) {
         this.replaceTitle(editor, suggestedTitle);
         showNotice(`Заголовок обновлен: "${suggestedTitle}"`);
-        
+        // После генерации — больше не автогенерировать для этой заметки
+        const file = view?.file;
+        if (file) this.generatedForCurrentFile.add(file.path);
         // Переименовываем файл, если это возможно
         if (view.file) {
           this.renameFile(view.file, suggestedTitle);
@@ -277,7 +285,10 @@ export default class AutoTitlePlugin extends Plugin {
 
   private insertTitleIntoContent(content: string, title: string): string {
     const lines = content.split('\n');
-    
+    // Если первая строка уже содержит нужный заголовок, ничего не делаем
+    if (lines[0] && lines[0].trim() === `# ${title}`) {
+      return content;
+    }
     // Проверяем, есть ли уже заголовок в первой строке
     if (lines[0] && lines[0].trim().startsWith('#')) {
       // Заменяем существующий заголовок
@@ -286,7 +297,6 @@ export default class AutoTitlePlugin extends Plugin {
       // Добавляем новый заголовок в начало
       lines.unshift(`# ${title}`, '');
     }
-    
     return lines.join('\n');
   }
 
