@@ -56,14 +56,17 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
-    // Auto generation
+    // Trigger Mode
     new Setting(containerEl)
-      .setName('Automatic Generation')
-      .setDesc('Automatically suggest titles while typing')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.autoTrigger)
+      .setName('Trigger Mode')
+      .setDesc('Choose how titles are generated: Manual (hotkey only), Auto (after typing pause), or Semi-auto (shows button after pause)')
+      .addDropdown(dropdown => dropdown
+        .addOption('manual', 'Manual (hotkey only)')
+        .addOption('semi-auto', 'Semi-auto (button after pause)')
+        .addOption('auto', 'Auto (after typing pause)')
+        .setValue(this.plugin.settings.triggerMode)
         .onChange(async (value) => {
-          this.plugin.settings.autoTrigger = value;
+          this.plugin.settings.triggerMode = value as 'manual' | 'auto' | 'semi-auto';
           await this.plugin.saveSettings();
         }));
 
@@ -94,12 +97,27 @@ export class AutoTitleSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
+    // Minimum Content Length
+    new Setting(containerEl)
+      .setName('Minimum Content Length')
+      .setDesc('Minimum number of characters required before auto-generation triggers')
+      .addText(text => text
+        .setPlaceholder('100')
+        .setValue(this.plugin.settings.minContentLength.toString())
+        .onChange(async (value) => {
+          const length = parseInt(value);
+          if (!isNaN(length) && length > 0) {
+            this.plugin.settings.minContentLength = length;
+            await this.plugin.saveSettings();
+          }
+        }));
+
     // Timeout
     new Setting(containerEl)
       .setName('Auto-generation Timeout (ms)')
-      .setDesc('Waiting time after you stop typing before generating a title')
+      .setDesc('Waiting time after you stop typing before showing generation option')
       .addText(text => text
-        .setPlaceholder('3000')
+        .setPlaceholder('5000')
         .setValue(this.plugin.settings.timeout.toString())
         .onChange(async (value) => {
           const timeout = parseInt(value);
@@ -107,6 +125,17 @@ export class AutoTitleSettingTab extends PluginSettingTab {
             this.plugin.settings.timeout = timeout;
             await this.plugin.saveSettings();
           }
+        }));
+
+    // Show Indicator
+    new Setting(containerEl)
+      .setName('Show Generation Indicator')
+      .setDesc('Show a notification 1 second before auto-generation in auto mode')
+      .addToggle(toggle => toggle
+        .setValue(this.plugin.settings.showIndicator)
+        .onChange(async (value) => {
+          this.plugin.settings.showIndicator = value;
+          await this.plugin.saveSettings();
         }));
 
     // Info
@@ -120,8 +149,14 @@ export class AutoTitleSettingTab extends PluginSettingTab {
       <p><strong>How to use:</strong></p>
       <ul>
         <li>Enter your OpenAI API key in the settings</li>
+        <li>Choose your preferred trigger mode:</li>
+        <ul>
+          <li><strong>Manual:</strong> Use hotkey only</li>
+          <li><strong>Semi-auto:</strong> Shows button after typing pause</li>
+          <li><strong>Auto:</strong> Generates after typing pause</li>
+        </ul>
         <li>Write text in your note</li>
-        <li>Use the hotkey or wait for automatic generation</li>
+        <li>Generate title using hotkey or automatic suggestion</li>
         <li>Confirm or reject the suggested title</li>
       </ul>
     `;
